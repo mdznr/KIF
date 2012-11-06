@@ -406,6 +406,40 @@ typedef CGPoint KIFDisplacement;
     }];
 }
 
++ (id)stepToDeleteTextInViewWithAccessibilityLabel:(NSString *)label traits:(UIAccessibilityTraits)traits
+{
+    NSString *description = [NSString stringWithFormat:@"Clear the text of the view with accessibility label \"%@\"", label];
+    return [self stepWithDescription:description executionBlock:^(KIFTestStep *step, NSError **error) {
+        
+        UIAccessibilityElement *element = [self _accessibilityElementWithLabel:label accessibilityValue:nil tappable:YES traits:traits error:error];
+        if (!element) {
+            return KIFTestStepResultWait;
+        }
+        
+        UIView *view = [UIAccessibilityElement viewContainingAccessibilityElement:element];
+        KIFTestWaitCondition(view, error, @"Cannot find view with accessibility label \"%@\"", label);
+		
+		if ( ![view respondsToSelector:@selector(text)] ) {
+			KIFTestWaitCondition(view, error, @"View with accessibility label \"%@\" doesn't respond to selector \"text\"", label);
+		}
+		
+		if ( [view isKindOfClass:[UITextField class]] || [view isKindOfClass:[UITextView class]] ) {
+			[(UITextField *)view setText:@""];
+		} else {
+			KIFTestCondition(NO, error, @"Failed to set text to nil on view with accessibility label \"%@\"", label);
+		}
+        
+        // This is probably a UITextField- or UITextView-ish view, so make sure it worked
+        if ( [view respondsToSelector:@selector(text)] ) {
+            NSString *expected = @"";
+            NSString *actual = [[view performSelector:@selector(text)] stringByTrimmingCharactersInSet:[NSCharacterSet newlineCharacterSet]];
+            KIFTestCondition([actual isEqualToString:expected], error, @"Failed to delete text in field; instead, it was \"%@\"", actual);
+        }
+        
+        return KIFTestStepResultSuccess;
+    }];
+}
+
 + (id)stepToSelectPickerViewRowWithTitle:(NSString *)title;
 {
     NSString *description = [NSString stringWithFormat:@"Select the \"%@\" item from the picker", title];
