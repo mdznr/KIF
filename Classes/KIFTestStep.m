@@ -419,9 +419,7 @@ typedef CGPoint KIFDisplacement;
         UIView *view = [UIAccessibilityElement viewContainingAccessibilityElement:element];
         KIFTestWaitCondition(view, error, @"Cannot find view with accessibility label \"%@\"", label);
 		
-		if ( ![view respondsToSelector:@selector(text)] ) {
-			KIFTestWaitCondition(view, error, @"View with accessibility label \"%@\" doesn't respond to selector \"text\"", label);
-		}
+		KIFTestCondition([view respondsToSelector:@selector(text)], error, @"View with accessibility label \"%@\" does not respond to @selector(text).", label);
 		
 		if ( [view isKindOfClass:[UITextField class]] || [view isKindOfClass:[UITextView class]] ) {
 			[(UITextField *)view setText:@""];
