@@ -350,9 +350,19 @@ typedef KIFTestStepResult (^KIFTestStepExecutionBlock)(KIFTestStep *step, NSErro
 + (id)stepToEnterText:(NSString *)text intoViewWithAccessibilityLabel:(NSString *)label traits:(UIAccessibilityTraits)traits expectedResult:(NSString *)expectedResult;
 
 /*!
- @method stepToDeleteTextInViewWithAccessibilityLabel:traits:
- @abstract A step that deletes text into a particular view in the view hierarchy.
+ @method stepToSetTextToNilInViewWithAccessibilityLabel:traits:
+ @abstract A step that set text to nil in a particular view in the view hierarchy.
  @discussion The view or accessibility element with the given label is searched for in the view hierarchy. The text property of the view is set to nil
+ @param label The accessibility label of the element to type into.
+ @param traits The accessibility traits of the element to type into. Elements that do not include at least these traits are ignored.
+ @result A configured test step.
+ */
++ (id)stepToSetTextToNilInViewWithAccessibilityLabel:(NSString *)label traits:(UIAccessibilityTraits)traits;
+
+/*!
+ @method stepToDeleteTextInViewWithAccessibilityLabel:traits:
+ @abstract A step that deletes text in a particular view in the view hierarchy.
+ @discussion The view or accessibility element with the given label is searched for in the view hierarchy. If the element isn't found or isn't currently tappable, then the step will attempt to wait until it is. Once the view is present and tappable, a tap event is simulated in the center of the view or element, then text is deleted by simulating taps on the delete keyboard key.
  @param label The accessibility label of the element to type into.
  @param traits The accessibility traits of the element to type into. Elements that do not include at least these traits are ignored.
  @result A configured test step.
@@ -360,7 +370,7 @@ typedef KIFTestStepResult (^KIFTestStepExecutionBlock)(KIFTestStep *step, NSErro
 + (id)stepToDeleteTextInViewWithAccessibilityLabel:(NSString *)label traits:(UIAccessibilityTraits)traits;
 
 /*!
- @method stepToSelectPickerViewRowWithTitle:
+ @method stepToSelectPickerViewRowWithTitle:+ (id)stepToDeleteTextInViewWithAccessibilityLabel:(NSString *)label traits:(UIAccessibilityTraits)traits
  @abstract A step that selects an item from a currently visible picker view.
  @discussion With a picker view already visible, this step will find an item with the given title, select that item, and tap the Done button.
  @param title The title of the row to select.

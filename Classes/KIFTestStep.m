@@ -406,7 +406,7 @@ typedef CGPoint KIFDisplacement;
     }];
 }
 
-+ (id)stepToDeleteTextInViewWithAccessibilityLabel:(NSString *)label traits:(UIAccessibilityTraits)traits
++ (id)stepToSetTextToNilInViewWithAccessibilityLabel:(NSString *)label traits:(UIAccessibilityTraits)traits
 {
     NSString *description = [NSString stringWithFormat:@"Clear the text of the view with accessibility label \"%@\"", label];
     return [self stepWithDescription:description executionBlock:^(KIFTestStep *step, NSError **error) {
@@ -431,6 +431,58 @@ typedef CGPoint KIFDisplacement;
         
         // This is probably a UITextField- or UITextView-ish view, so make sure it worked
         if ( [view respondsToSelector:@selector(text)] ) {
+            NSString *expected = @"";
+            NSString *actual = [[view performSelector:@selector(text)] stringByTrimmingCharactersInSet:[NSCharacterSet newlineCharacterSet]];
+            KIFTestCondition([actual isEqualToString:expected], error, @"Failed to delete text in field; instead, it was \"%@\"", actual);
+        }
+        
+        return KIFTestStepResultSuccess;
+    }];
+}
+
++ (id)stepToDeleteTextInViewWithAccessibilityLabel:(NSString *)label traits:(UIAccessibilityTraits)traits
+{
+    NSString *description = [NSString stringWithFormat:@"Delete the text the view with accessibility label \"%@\"", label];
+    return [self stepWithDescription:description executionBlock:^(KIFTestStep *step, NSError **error) {
+        
+        UIAccessibilityElement *element = [self _accessibilityElementWithLabel:label accessibilityValue:nil tappable:YES traits:traits error:error];
+        if (!element) {
+            return KIFTestStepResultWait;
+        }
+        
+        UIView *view = [UIAccessibilityElement viewContainingAccessibilityElement:element];
+        KIFTestWaitCondition(view, error, @"Cannot find view with accessibility label \"%@\"", label);
+		
+        CGRect elementFrame = [view.window convertRect:element.accessibilityFrame toView:view];
+        CGPoint tappablePointInElement = [view tappablePointInRect:elementFrame];
+        
+        // This is mostly redundant of the test in _accessibilityElementWithLabel:
+        KIFTestCondition(!isnan(tappablePointInElement.x), error, @"The element with accessibility label %@ is not tappable", label);
+        [view tapAtPoint:tappablePointInElement];
+        
+        KIFTestWaitCondition([view isDescendantOfFirstResponder], error, @"Failed to make the view with accessibility label \"%@\" the first responder. First responder is %@", label, [[[UIApplication sharedApplication] keyWindow] firstResponder]);
+		
+		KIFTestCondition([view respondsToSelector:@selector(text)], error, @"View with accessibility label \"%@\" does not respond to @selector(text).", label);
+        
+        // Wait for the keyboard
+        CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.5, false);
+        
+        while ( [[(id)view text] length] ) {
+            NSString *characterString = @"\b";
+            
+            if (![self _enterCharacter:characterString]) {
+                // Attempt to cheat if we couldn't find the character
+                if ([view isKindOfClass:[UITextField class]] || [view isKindOfClass:[UITextView class]]) {
+                    NSLog(@"KIF: Unable to find keyboard key for %@. Inserting manually.", characterString);
+                    [(UITextField *)view setText:[[(UITextField *)view text] stringByAppendingString:characterString]];
+                } else {
+                    KIFTestCondition(NO, error, @"Failed to find key for character \"%@\"", characterString);
+                }
+            }
+        }
+        
+        // This is probably a UITextField- or UITextView-ish view, so make sure it worked
+        if ([view respondsToSelector:@selector(text)]) {
             NSString *expected = @"";
             NSString *actual = [[view performSelector:@selector(text)] stringByTrimmingCharactersInSet:[NSCharacterSet newlineCharacterSet]];
             KIFTestCondition([actual isEqualToString:expected], error, @"Failed to delete text in field; instead, it was \"%@\"", actual);
